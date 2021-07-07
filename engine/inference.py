@@ -12,13 +12,7 @@ from data.datasets.eval_reid import evaluate
 from fastai.torch_core import to_np
 
 
-def inference(
-        cfg,
-        model,
-        data_bunch,
-        tst_loader,
-        num_query
-):
+def inference(cfg, model, data_bunch, tst_loader, num_query):
     logger = logging.getLogger("reid_baseline.inference")
     logger.info("Start inferencing")
 
@@ -47,14 +41,14 @@ def inference(
 
     # Euclid distance
     # distmat = torch.pow(qf,2).sum(dim=1,keepdim=True).expand(m,n) + \
-        # torch.pow(gf,2).sum(dim=1,keepdim=True).expand(n,m).t()
+    # torch.pow(gf,2).sum(dim=1,keepdim=True).expand(n,m).t()
     # distmat.addmm_(1, -2, qf, gf.t())
 
     distmat = to_np(distmat)
 
     # Compute CMC and mAP.
     cmc, mAP = evaluate(-distmat, q_pids, g_pids, q_camids, g_camids)
-    logger.info('Compute CMC Curve')
+    logger.info("Compute CMC Curve")
     logger.info("mAP: {:.1%}".format(mAP))
     for r in [1, 5, 10]:
         logger.info("CMC curve, Rank-{:<3}:{:.1%}".format(r, cmc[r - 1]))

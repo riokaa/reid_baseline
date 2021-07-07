@@ -24,7 +24,7 @@ def setup_logger(name, save_dir, distributed_rank):
     logger.addHandler(ch)
 
     if save_dir:
-        fh = logging.FileHandler(os.path.join(save_dir, "log.txt"), mode='w')
+        fh = logging.FileHandler(os.path.join(save_dir, "log.txt"), mode="w")
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(formatter)
         logger.addHandler(fh)
@@ -38,7 +38,7 @@ class Logger(object):
         self.file = None
         if fpath is not None:
             mkdir_if_missing(os.path.dirname(fpath))
-            self.file = open(fpath, 'w')
+            self.file = open(fpath, "w")
 
     def __del__(self):
         self.close()

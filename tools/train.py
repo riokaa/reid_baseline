@@ -36,15 +36,20 @@ def train(cfg, local_rank):
 def main():
     parser = argparse.ArgumentParser(description="ReID Baseline Training")
     parser.add_argument(
-        '-cfg', "--config_file", 
-        default="", 
-        metavar="FILE", 
-        help="path to config file", 
-        type=str
+        "-cfg",
+        "--config_file",
+        default="",
+        metavar="FILE",
+        help="path to config file",
+        type=str,
     )
     parser.add_argument("--local_rank", type=int, default=0)
-    parser.add_argument("opts", help="Modify config options using the command-line", default=None,
-                        nargs=argparse.REMAINDER)
+    parser.add_argument(
+        "opts",
+        help="Modify config options using the command-line",
+        default=None,
+        nargs=argparse.REMAINDER,
+    )
     args = parser.parse_args()
     if args.config_file != "":
         cfg.merge_from_file(args.config_file)
@@ -55,15 +60,16 @@ def main():
 
     if cfg.SOLVER.DIST:
         torch.cuda.set_device(args.local_rank)
-        torch.distributed.init_process_group(
-            backend="nccl", init_method="env://"
-        )
+        torch.distributed.init_process_group(backend="nccl", init_method="env://")
         torch.cuda.synchronize()
 
     cfg.freeze()
 
-    log_save_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASETS.TEST_NAMES, 'version_'+cfg.MODEL.VERSION)
-    if not os.path.exists(log_save_dir): os.makedirs(log_save_dir)
+    log_save_dir = os.path.join(
+        cfg.OUTPUT_DIR, cfg.DATASETS.TEST_NAMES, "version_" + cfg.MODEL.VERSION
+    )
+    if not os.path.exists(log_save_dir):
+        os.makedirs(log_save_dir)
 
     logger = setup_logger("reid_baseline", log_save_dir, 0)
     logger.info("Using {} GPUs.".format(num_gpus))
@@ -77,5 +83,5 @@ def main():
     train(cfg, args.local_rank)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

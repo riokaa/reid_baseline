@@ -15,7 +15,7 @@ def normalize(x, axis=-1):
     Returns:
       x: pytorch Variable, same shape as input
     """
-    x = 1. * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
+    x = 1.0 * x / (torch.norm(x, 2, axis, keepdim=True).expand_as(x) + 1e-12)
     return x
 
 
@@ -67,15 +67,16 @@ def hard_example_mining(dist_mat, labels, return_inds=False):
     # ap_weight = F.softmax(pos_dist, dim=1)
     # dist_ap = torch.sum(ap_weight * pos_dist, dim=1)
     dist_ap, relative_p_inds = torch.max(
-        dist_mat[is_pos].contiguous().view(N, -1), 1, keepdim=True)
+        dist_mat[is_pos].contiguous().view(N, -1), 1, keepdim=True
+    )
     # `dist_an` means distance(anchor, negative)
     # both `dist_an` and `relative_n_inds` with shape [N, 1]
     dist_an, relative_n_inds = torch.min(
-        dist_mat[is_neg].contiguous().view(N, -1), 1, keepdim=True)
+        dist_mat[is_neg].contiguous().view(N, -1), 1, keepdim=True
+    )
     # neg_dist = dist_mat[is_neg].contiguous().view(N, -1)
     # an_weight = F.softmax(-neg_dist, dim=1)
     # dist_an = torch.sum(an_weight * neg_dist, dim=1)
-
 
     # shape [N]
     dist_ap = dist_ap.squeeze(1)
@@ -83,14 +84,20 @@ def hard_example_mining(dist_mat, labels, return_inds=False):
 
     if return_inds:
         # shape [N, N]
-        ind = (labels.new().resize_as_(labels)
-               .copy_(torch.arange(0, N).long())
-               .unsqueeze(0).expand(N, N))
+        ind = (
+            labels.new()
+            .resize_as_(labels)
+            .copy_(torch.arange(0, N).long())
+            .unsqueeze(0)
+            .expand(N, N)
+        )
         # shape [N, 1]
         p_inds = torch.gather(
-            ind[is_pos].contiguous().view(N, -1), 1, relative_p_inds.data)
+            ind[is_pos].contiguous().view(N, -1), 1, relative_p_inds.data
+        )
         n_inds = torch.gather(
-            ind[is_neg].contiguous().view(N, -1), 1, relative_n_inds.data)
+            ind[is_neg].contiguous().view(N, -1), 1, relative_n_inds.data
+        )
         # shape [N]
         p_inds = p_inds.squeeze(1)
         n_inds = n_inds.squeeze(1)
@@ -116,8 +123,7 @@ class TripletLoss(nn.Module):
         if normalize_feature:
             global_feat = normalize(global_feat, axis=-1)
         dist_mat = euclidean_dist(global_feat, global_feat)
-        dist_ap, dist_an = hard_example_mining(
-            dist_mat, labels)
+        dist_ap, dist_an = hard_example_mining(dist_mat, labels)
         y = dist_an.new().resize_as_(dist_an).fill_(1)
         if self.margin is not None:
             loss = self.ranking_loss(dist_an, dist_ap, y)

@@ -24,7 +24,7 @@ class RandomIdentitySampler(Sampler):
     """
 
     def __init__(self, data_source, batch_size, num_instances):
-        pat = re.compile(r'([-\d]+)_c(\d)')
+        pat = re.compile(r"([-\d]+)_c(\d)")
 
         self.data_source = data_source
         self.batch_size = batch_size
@@ -33,13 +33,13 @@ class RandomIdentitySampler(Sampler):
         self.index_dic = defaultdict(list)
         for index, info in enumerate(self.data_source):
             fname = info[0]
-            prefix = fname.split('/')[1]
+            prefix = fname.split("/")[1]
             try:
                 pid, _ = pat.search(fname).groups()
             except:  # cuhk03
-                prefix = fname.split('/')[4]
-                pid = '_'.join(fname.split('/')[-1].split('_')[:2])
-            pid = prefix + '_' + pid
+                prefix = fname.split("/")[4]
+                pid = "_".join(fname.split("/")[-1].split("_")[:2])
+            pid = prefix + "_" + pid
             self.index_dic[pid].append(index)
         self.pids = list(self.index_dic.keys())
 
@@ -79,13 +79,12 @@ class RandomIdentitySampler(Sampler):
                     avai_pids.remove(pid)
 
         if len(final_idxs) > self.length:
-            final_idxs = final_idxs[:self.length]
+            final_idxs = final_idxs[: self.length]
         elif len(final_idxs) < self.length:
             cycle = self.length - len(final_idxs)
             final_idxs = final_idxs + final_idxs[:cycle]
-        assert len(final_idxs) == self.length, 'sampler length must match'
+        assert len(final_idxs) == self.length, "sampler length must match"
         return iter(final_idxs)
 
     def __len__(self):
         return self.length
-

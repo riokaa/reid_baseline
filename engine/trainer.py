@@ -23,8 +23,14 @@ class ReidSystem(pl.LightningModule):
     def __init__(self, cfg, logger, tng_loader, val_loader, num_classes, num_query):
         super().__init__()
         # Define networks
-        self.cfg,self.logger,self.tng_loader,self.val_loader,self.num_classes,self.num_query = \
-            cfg,logger,tng_loader,val_loader,num_classes,num_query
+        (
+            self.cfg,
+            self.logger,
+            self.tng_loader,
+            self.val_loader,
+            self.num_classes,
+            self.num_query,
+        ) = (cfg, logger, tng_loader, val_loader, num_classes, num_query)
         self.model = build_model(cfg, num_classes)
         self.loss_fns = reidLoss(cfg.SOLVER.LOSSTYPE, cfg.SOLVER.MARGIN, num_classes)
 
@@ -32,34 +38,40 @@ class ReidSystem(pl.LightningModule):
         inputs, labels = batch
         outs = self.model(inputs, labels)
         loss = self.loss_fns(outs, labels)
-        return {'loss': loss}
+        return {"loss": loss}
 
     def validation_step(self, batch, batch_nb):
         inputs, pids, camids = batch
         feats = self.model(inputs)
-        return {'feats': feats, 'pids': pids.cpu().numpy(), 'camids': camids.cpu().numpy()}
+        return {
+            "feats": feats,
+            "pids": pids.cpu().numpy(),
+            "camids": camids.cpu().numpy(),
+        }
 
     def validation_end(self, outputs):
-        feats,pids,camids = [],[],[]
+        feats, pids, camids = [], [], []
         for o in outputs:
-            feats.append(o['feats'])
-            pids.extend(o['pids'])
-            camids.extend(o['camids'])
+            feats.append(o["feats"])
+            pids.extend(o["pids"])
+            camids.extend(o["camids"])
         feats = torch.cat(feats, dim=0)
         if self.cfg.TEST.NORM:
             feats = F.normalize(feats, p=2, dim=1)
         # query
-        qf = feats[:self.num_query]
-        q_pids = np.asarray(pids[:self.num_query])
-        q_camids = np.asarray(camids[:self.num_query])
+        qf = feats[: self.num_query]
+        q_pids = np.asarray(pids[: self.num_query])
+        q_camids = np.asarray(camids[: self.num_query])
         # gallery
-        gf = feats[self.num_query:]
-        g_pids = np.asarray(pids[self.num_query:])
-        g_camids = np.asarray(camids[self.num_query:])
+        gf = feats[self.num_query :]
+        g_pids = np.asarray(pids[self.num_query :])
+        g_camids = np.asarray(camids[self.num_query :])
 
         m, n = qf.shape[0], gf.shape[0]
-        distmat = torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n) + \
-                  torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
+        distmat = (
+            torch.pow(qf, 2).sum(dim=1, keepdim=True).expand(m, n)
+            + torch.pow(gf, 2).sum(dim=1, keepdim=True).expand(n, m).t()
+        )
         distmat.addmm_(1, -2, qf, gf.t())
         distmat = distmat.cpu().numpy()
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
@@ -67,7 +79,7 @@ class ReidSystem(pl.LightningModule):
         self.logger.info(f"mAP: {mAP:.1%}")
         for r in [1, 5, 10]:
             self.logger.info(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.1%}")
-        tqdm_dic = {'rank1': cmc[0], 'mAP': mAP}
+        tqdm_dic = {"rank1": cmc[0], "mAP": mAP}
         return tqdm_dic
 
     def configure_optimizers(self):
@@ -85,12 +97,12 @@ class ReidSystem(pl.LightningModule):
 
 
 def do_train(
-        cfg,
-        local_rank,
-        tng_loader,
-        val_loader,
-        num_classes,
-        num_query,
+    cfg,
+    local_rank,
+    tng_loader,
+    val_loader,
+    num_classes,
+    num_query,
 ):
     eval_period = cfg.SOLVER.EVAL_PERIOD
     output_dir = cfg.OUTPUT_DIR
@@ -100,17 +112,21 @@ def do_train(
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start Training")
 
-    filepath = os.path.join(output_dir, cfg.DATASETS.TEST_NAMES, 'version_'+cfg.MODEL.VERSION, 'ckpts')
+    filepath = os.path.join(
+        output_dir, cfg.DATASETS.TEST_NAMES, "version_" + cfg.MODEL.VERSION, "ckpts"
+    )
     checkpoint_callback = ModelCheckpoint(
         filepath=filepath,
-        monitor='rank1',
+        monitor="rank1",
         save_best_only=True,
         verbose=True,
-        mode='max',
+        mode="max",
     )
 
     model = ReidSystem(cfg, logger, tng_loader, val_loader, num_classes, num_query)
-    exp = Experiment(save_dir=output_dir, name=cfg.DATASETS.TEST_NAMES, version=cfg.MODEL.VERSION)
+    exp = Experiment(
+        save_dir=output_dir, name=cfg.DATASETS.TEST_NAMES, version=cfg.MODEL.VERSION
+    )
 
     trainer = pl.Trainer(
         experiment=exp,
@@ -120,7 +136,7 @@ def do_train(
         gpus=gpus,
         nb_sanity_val_steps=0,
         print_weights_summary=False,
-        add_log_row_interval=len(tng_loader)//2,
+        add_log_row_interval=len(tng_loader) // 2,
     )
 
     trainer.fit(model)
@@ -136,4 +152,3 @@ def do_train(
     #     else:
     #         learn.model.load_state_dict(state['model'])
     #     logger.info(f'continue training from checkpoint {cfg.MODEL.CHECKPOINT}')
-

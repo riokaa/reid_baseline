@@ -11,6 +11,7 @@ import warnings
 
 try:
     from csrc.eval_cylib.eval_metrics_cy import evaluate_cy
+
     IS_CYTHON_AVAI = True
     print("Using Cython evaluation code as the backend")
 except ImportError:
@@ -36,7 +37,7 @@ def eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
     # compute cmc curve for each query
     all_cmc = []
     all_AP = []
-    num_valid_q = 0.  # number of valid query
+    num_valid_q = 0.0  # number of valid query
 
     for q_idx in range(num_q):
         # get query pid and camid
@@ -49,7 +50,9 @@ def eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
         keep = np.invert(remove)
 
         # compute cmc curve
-        raw_cmc = matches[q_idx][keep]  # binary vector, positions with value 1 are correct matches
+        raw_cmc = matches[q_idx][
+            keep
+        ]  # binary vector, positions with value 1 are correct matches
         if not np.any(raw_cmc):
             # this condition is true when query identity does not appear in gallery
             continue
@@ -59,7 +62,7 @@ def eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
         for idx, pid in enumerate(kept_g_pids):
             g_pids_dict[pid].append(idx)
 
-        cmc, AP = 0., 0.
+        cmc, AP = 0.0, 0.0
         for repeat_idx in range(num_repeats):
             mask = np.zeros(len(raw_cmc), dtype=np.bool)
             for _, idxs in g_pids_dict.items():
@@ -73,7 +76,7 @@ def eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
             # compute AP
             num_rel = masked_raw_cmc.sum()
             tmp_cmc = masked_raw_cmc.cumsum()
-            tmp_cmc = [x / (i + 1.) for i, x in enumerate(tmp_cmc)]
+            tmp_cmc = [x / (i + 1.0) for i, x in enumerate(tmp_cmc)]
             tmp_cmc = np.asarray(tmp_cmc) * masked_raw_cmc
             AP += tmp_cmc.sum() / num_rel
 
@@ -81,7 +84,7 @@ def eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
         AP /= num_repeats
         all_cmc.append(cmc)
         all_AP.append(AP)
-        num_valid_q += 1.
+        num_valid_q += 1.0
 
     assert num_valid_q > 0, "Error: all query identities do not appear in gallery"
 
@@ -108,7 +111,7 @@ def eval_market1501(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
     # compute cmc curve for each query
     all_cmc = []
     all_AP = []
-    num_valid_q = 0.  # number of valid query
+    num_valid_q = 0.0  # number of valid query
 
     for q_idx in range(num_q):
         # get query pid and camid
@@ -121,7 +124,9 @@ def eval_market1501(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
         keep = np.invert(remove)
 
         # compute cmc curve
-        raw_cmc = matches[q_idx][keep]  # binary vector, positions with value 1 are correct matches
+        raw_cmc = matches[q_idx][
+            keep
+        ]  # binary vector, positions with value 1 are correct matches
         if not np.any(raw_cmc):
             # this condition is true when query identity does not appear in gallery
             continue
@@ -130,13 +135,13 @@ def eval_market1501(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
         cmc[cmc > 1] = 1
 
         all_cmc.append(cmc[:max_rank])
-        num_valid_q += 1.
+        num_valid_q += 1.0
 
         # compute average precision
         # reference: https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)#Average_precision
         num_rel = raw_cmc.sum()
         tmp_cmc = raw_cmc.cumsum()
-        tmp_cmc = [x / (i + 1.) for i, x in enumerate(tmp_cmc)]
+        tmp_cmc = [x / (i + 1.0) for i, x in enumerate(tmp_cmc)]
         tmp_cmc = np.asarray(tmp_cmc) * raw_cmc
         AP = tmp_cmc.sum() / num_rel
         all_AP.append(AP)
@@ -150,17 +155,30 @@ def eval_market1501(distmat, q_pids, g_pids, q_camids, g_camids, max_rank):
     return all_cmc, mAP
 
 
-def evaluate_py(distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03):
+def evaluate_py(
+    distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03
+):
     if use_metric_cuhk03:
         return eval_cuhk03(distmat, q_pids, g_pids, q_camids, g_camids, max_rank)
     else:
         return eval_market1501(distmat, q_pids, g_pids, q_camids, g_camids, max_rank)
 
 
-def evaluate(distmat, q_pids, g_pids, q_camids, g_camids, max_rank=50, use_metric_cuhk03=False, use_cython=True):
+def evaluate(
+    distmat,
+    q_pids,
+    g_pids,
+    q_camids,
+    g_camids,
+    max_rank=50,
+    use_metric_cuhk03=False,
+    use_cython=True,
+):
     if use_cython and IS_CYTHON_AVAI:
-        return evaluate_cy(distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03)
+        return evaluate_cy(
+            distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03
+        )
     else:
-        return evaluate_py(distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03)
-
-
+        return evaluate_py(
+            distmat, q_pids, g_pids, q_camids, g_camids, max_rank, use_metric_cuhk03
+        )
