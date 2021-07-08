@@ -20,17 +20,17 @@ from solver.build import make_optimizer, make_lr_scheduler
 
 
 class ReidSystem(pl.LightningModule):
-    def __init__(self, cfg, logger, tng_loader, val_loader, num_classes, num_query):
+    def __init__(self, cfg, logger, train_loader, val_loader, num_classes, num_query):
         super().__init__()
         # Define networks
         (
             self.cfg,
             self.logger,
-            self.tng_loader,
+            self.train_loader,
             self.val_loader,
             self.num_classes,
             self.num_query,
-        ) = (cfg, logger, tng_loader, val_loader, num_classes, num_query)
+        ) = (cfg, logger, train_loader, val_loader, num_classes, num_query)
         self.model = build_model(cfg, num_classes)
         self.loss_fns = reidLoss(cfg.SOLVER.LOSSTYPE, cfg.SOLVER.MARGIN, num_classes)
 
@@ -88,8 +88,8 @@ class ReidSystem(pl.LightningModule):
         return [opt_fns], [lr_sched]
 
     @pl.data_loader
-    def tng_dataloader(self):
-        return self.tng_loader
+    def train_dataloader(self):
+        return self.train_loader
 
     @pl.data_loader
     def val_dataloader(self):
@@ -99,7 +99,7 @@ class ReidSystem(pl.LightningModule):
 def do_train(
     cfg,
     local_rank,
-    tng_loader,
+    train_loader,
     val_loader,
     num_classes,
     num_query,
@@ -123,7 +123,7 @@ def do_train(
         mode="max",
     )
 
-    model = ReidSystem(cfg, logger, tng_loader, val_loader, num_classes, num_query)
+    model = ReidSystem(cfg, logger, train_loader, val_loader, num_classes, num_query)
     exp = Experiment(
         save_dir=output_dir, name=cfg.DATASETS.TEST_NAMES, version=cfg.MODEL.VERSION
     )
@@ -136,7 +136,7 @@ def do_train(
         gpus=gpus,
         nb_sanity_val_steps=0,
         print_weights_summary=False,
-        add_log_row_interval=len(tng_loader) // 2,
+        add_log_row_interval=len(train_loader) // 2,
     )
 
     trainer.fit(model)

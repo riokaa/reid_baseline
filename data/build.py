@@ -10,14 +10,14 @@ import re
 
 from torch.utils.data import DataLoader
 
-from .collate_batch import tng_collate_fn
+from .collate_batch import train_collate_fn
 from .datasets import ImageDataset, CUHK03
 from .samplers import RandomIdentitySampler
 from .transforms import build_transforms
 
 
 def get_dataloader(cfg):
-    tng_tfms = build_transforms(cfg, is_train=True)
+    train_tfms = build_transforms(cfg, is_train=True)
     val_tfms = build_transforms(cfg, is_train=False)
 
     def _process_dir(dir_path):
@@ -64,26 +64,26 @@ def get_dataloader(cfg):
 
     num_workers = min(16, len(os.sched_getaffinity(0)))
 
-    tng_set = ImageDataset(train_img_items, tng_tfms, relabel=True)
+    train_set = ImageDataset(train_img_items, train_tfms, relabel=True)
     if cfg.DATALOADER.SAMPLER == "softmax":
-        tng_dataloader = DataLoader(
-            tng_set,
+        train_dataloader = DataLoader(
+            train_set,
             cfg.SOLVER.IMS_PER_BATCH,
             shuffle=True,
             num_workers=num_workers,
-            collate_fn=tng_collate_fn,
+            collate_fn=train_collate_fn,
             pin_memory=True,
         )
     elif cfg.DATALOADER.SAMPLER == "triplet":
         data_sampler = RandomIdentitySampler(
             train_img_items, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE
         )
-        tng_dataloader = DataLoader(
-            tng_set,
+        train_dataloader = DataLoader(
+            train_set,
             cfg.SOLVER.IMS_PER_BATCH,
             sampler=data_sampler,
             num_workers=num_workers,
-            collate_fn=tng_collate_fn,
+            collate_fn=train_collate_fn,
             pin_memory=True,
         )
     else:
@@ -91,4 +91,4 @@ def get_dataloader(cfg):
 
     val_set = ImageDataset(query_names + gallery_names, val_tfms, relabel=False)
     val_dataloader = DataLoader(val_set, cfg.TEST.IMS_PER_BATCH, num_workers=num_cpus)
-    return tng_dataloader, val_dataloader, tng_set.c, len(query_names)
+    return train_dataloader, val_dataloader, train_set.c, len(query_names)

@@ -21,12 +21,12 @@ from utils.logger import setup_logger
 
 def train(cfg, local_rank):
     # prepare dataset
-    tng_loader, val_loader, num_classes, num_query = get_dataloader(cfg)
+    train_loader, val_loader, num_classes, num_query = get_dataloader(cfg)
 
     do_train(
         cfg,
         local_rank,
-        tng_loader,
+        train_loader,
         val_loader,
         num_classes,
         num_query,
