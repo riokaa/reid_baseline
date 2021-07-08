@@ -1,4 +1,4 @@
-python tools/train.py -cfg='configs/softmax_triplet.yml' \
+python3 tools/train.py -cfg='configs/softmax_triplet.yml' \
 DATASETS.NAMES '("duke",)'  \
 DATASETS.TEST_NAMES 'duke' \
 MODEL.BACKBONE 'resnet50' \

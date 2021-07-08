@@ -12,7 +12,8 @@ import pytorch_lightning as pl
 import torch
 import torch.nn.functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
-from test_tube import Experiment
+from pytorch_lightning.loggers import TestTubeLogger
+import test_tube
 
 from data.datasets.eval_reid import evaluate
 from modeling import build_model, reidLoss
@@ -20,17 +21,16 @@ from solver.build import make_optimizer, make_lr_scheduler
 
 
 class ReidSystem(pl.LightningModule):
-    def __init__(self, cfg, logger, train_loader, val_loader, num_classes, num_query):
+    def __init__(self, cfg, train_loader, val_loader, num_classes, num_query):
         super().__init__()
         # Define networks
         (
             self.cfg,
-            self.logger,
             self.train_loader,
             self.val_loader,
             self.num_classes,
             self.num_query,
-        ) = (cfg, logger, train_loader, val_loader, num_classes, num_query)
+        ) = (cfg, train_loader, val_loader, num_classes, num_query)
         self.model = build_model(cfg, num_classes)
         self.loss_fns = reidLoss(cfg.SOLVER.LOSSTYPE, cfg.SOLVER.MARGIN, num_classes)
 
@@ -75,10 +75,10 @@ class ReidSystem(pl.LightningModule):
         distmat.addmm_(1, -2, qf, gf.t())
         distmat = distmat.cpu().numpy()
         cmc, mAP = evaluate(distmat, q_pids, g_pids, q_camids, g_camids)
-        self.logger.info(f"Test Results - Epoch: {self.current_epoch + 1}")
-        self.logger.info(f"mAP: {mAP:.1%}")
+        self.log(f"Test Results - Epoch: {self.current_epoch + 1}")
+        self.log(f"mAP: {mAP:.1%}")
         for r in [1, 5, 10]:
-            self.logger.info(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.1%}")
+            self.log(f"CMC curve, Rank-{r:<3}:{cmc[r - 1]:.1%}")
         tqdm_dic = {"rank1": cmc[0], "mAP": mAP}
         return tqdm_dic
 
@@ -87,11 +87,9 @@ class ReidSystem(pl.LightningModule):
         lr_sched = make_lr_scheduler(self.cfg, opt_fns)
         return [opt_fns], [lr_sched]
 
-    @pl.data_loader
     def train_dataloader(self):
         return self.train_loader
 
-    @pl.data_loader
     def val_dataloader(self):
         return self.val_loader
 
@@ -112,31 +110,31 @@ def do_train(
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start Training")
 
-    filepath = os.path.join(
-        output_dir, cfg.DATASETS.TEST_NAMES, "version_" + cfg.MODEL.VERSION, "ckpts"
-    )
+    dirpath = os.path.join(output_dir, cfg.DATASETS.TEST_NAMES)
+    filename = f"ckpts-v{cfg.MODEL.VERSION}" + "-epoch{epoch:02d}-rank1{rank1:02d}"
     checkpoint_callback = ModelCheckpoint(
-        filepath=filepath,
+        dirpath=dirpath,
+        filename=filename,
         monitor="rank1",
-        save_best_only=True,
+        save_top_k=1,
         verbose=True,
         mode="max",
     )
 
-    model = ReidSystem(cfg, logger, train_loader, val_loader, num_classes, num_query)
-    exp = Experiment(
+    model = ReidSystem(cfg, train_loader, val_loader, num_classes, num_query)
+    tt_logger = TestTubeLogger(
         save_dir=output_dir, name=cfg.DATASETS.TEST_NAMES, version=cfg.MODEL.VERSION
     )
 
     trainer = pl.Trainer(
-        experiment=exp,
-        max_nb_epochs=epochs,
+        logger=tt_logger,
+        max_epochs=epochs,
         checkpoint_callback=checkpoint_callback,
         check_val_every_n_epoch=eval_period,
         gpus=gpus,
-        nb_sanity_val_steps=0,
-        print_weights_summary=False,
-        add_log_row_interval=len(train_loader) // 2,
+        num_sanity_val_steps=0,
+        weights_summary="top",
+        log_every_n_steps=len(train_loader) // 2,
     )
 
     trainer.fit(model)

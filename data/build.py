@@ -90,5 +90,5 @@ def get_dataloader(cfg):
         raise NameError(f"{cfg.DATALOADER.SAMPLER} sampler is not support")
 
     val_set = ImageDataset(query_names + gallery_names, val_tfms, relabel=False)
-    val_dataloader = DataLoader(val_set, cfg.TEST.IMS_PER_BATCH, num_workers=num_cpus)
+    val_dataloader = DataLoader(val_set, cfg.TEST.IMS_PER_BATCH)
     return train_dataloader, val_dataloader, train_set.c, len(query_names)

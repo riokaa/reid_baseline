@@ -5,9 +5,9 @@
 """
 
 import h5py
+import imageio
 import os.path as osp
 from scipy.io import loadmat
-from scipy.misc import imsave
 
 from utils.iotools import mkdir_if_missing, write_json, read_json
 from .bases import BaseImageDataset
@@ -189,7 +189,7 @@ class CUHK03(BaseImageDataset):
                 )
                 img_path = osp.join(save_dir, img_name)
                 if not osp.isfile(img_path):
-                    imsave(img_path, img)
+                    imageio.imwrite(img_path, img)
                 img_paths.append(img_path)
             return img_paths
 

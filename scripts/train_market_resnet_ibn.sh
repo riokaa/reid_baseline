@@ -1,6 +1,6 @@
 gpu=0
 
-CUDA_VISIBLE_DEVICES=$gpu python tools/train.py -cfg='configs/softmax_triplet.yml' \
+CUDA_VISIBLE_DEVICES=$gpu python3 tools/train.py -cfg='configs/softmax_triplet.yml' \
 MODEL.BACKBONE 'resnet50_ibn' \
 MODEL.PRETRAIN_PATH '/export/home/lxy/.cache/torch/checkpoints/resnet50_ibn_a.pth.tar' \
 DATASETS.NAMES '("market1501",)'  \

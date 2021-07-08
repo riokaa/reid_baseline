@@ -179,7 +179,7 @@ class ResNet(nn.Module):
         return x
 
     def load_pretrain(self, model_path=""):
-        with_model_path = model_path is not ""
+        with_model_path = model_path != ""
         if not with_model_path:  # resnet pretrain
             state_dict = model_zoo.load_url(model_urls[self._model_name])
             state_dict.pop("fc.weight")
