@@ -136,6 +136,7 @@ def do_train(
         num_sanity_val_steps=0,
         weights_summary="top",
         log_every_n_steps=len(train_loader) // 2,
+        replace_sampler_ddp=False,
     )
 
     trainer.fit(model)

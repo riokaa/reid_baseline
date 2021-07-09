@@ -5,9 +5,11 @@
 """
 import numpy as np
 from collections import defaultdict
+import sys
 import warnings
 
 try:
+    sys.path.append(".")
     from csrc.eval_cylib.eval_metrics_cy import evaluate_cy
 
     IS_CYTHON_AVAI = True

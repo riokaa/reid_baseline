@@ -35,7 +35,7 @@ def make_data_loader(cfg):
             num_workers=num_workers,
             collate_fn=train_collate_fn,
         )
-    elif cfg.DATALOADER.SAMPLER == "softmax_triplet_cluster":
+    elif cfg.DATALOADER.SAMPLER == "softmax_triplet":
         train_set.with_index = True
         train_loader = DataLoader(
             train_set,
