@@ -20,7 +20,7 @@ _C = CN()
 # MODEL
 # -----------------------------------------------------------------------------
 _C.MODEL = CN()
-_C.MODEL.GPUS = [0]
+_C.MODEL.GPUS = 1
 # Model backbone
 _C.MODEL.BACKBONE = "resnet50"
 # Last stride for backbone
@@ -118,8 +118,8 @@ _C.SOLVER.WARMUP_FACTOR = 1.0 / 3
 _C.SOLVER.WARMUP_ITERS = 500
 _C.SOLVER.WARMUP_METHOD = "linear"
 
-_C.SOLVER.CHECKPOINT_PERIOD = 50
-_C.SOLVER.EVAL_PERIOD = 50
+_C.SOLVER.CHECKPOINT_PERIOD = 30
+_C.SOLVER.EVAL_PERIOD = 30
 # Number of images per batch
 # This is global, so if we have 8 GPUs and IMS_PER_BATCH = 16, each GPU will
 # see 2 images per batch
@@ -135,4 +135,4 @@ _C.TEST.WEIGHT = ""
 # ---------------------------------------------------------------------------- #
 # Misc options
 # ---------------------------------------------------------------------------- #
-_C.OUTPUT_DIR = ""
+_C.OUTPUT_DIR = "./logs"

@@ -10,10 +10,10 @@ from .cosface import AddMarginProduct
 from .label_smooth import CrossEntropyLabelSmooth
 from .triplet_loss import TripletLoss
 
-__all__ = ["reidLoss"]
+__all__ = ["ReidLoss"]
 
 
-class reidLoss(nn.Module):
+class ReidLoss(nn.Module):
     def __init__(self, lossType: list, margin: float, num_classes: float):
         super().__init__()
         self.lossType = lossType

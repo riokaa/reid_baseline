@@ -8,7 +8,6 @@ import argparse
 import os
 import sys
 
-import warnings
 import torch
 from torch.backends import cudnn
 

@@ -27,6 +27,6 @@ SOLVER:
 TEST:
   IMS_PER_BATCH: 256
 
-OUTPUT_DIR: "/export/home/lxy/CHECKPOINTS/reid/market1501/softmax_bs64_384x128"
+OUTPUT_DIR: "logs/market/batch256/"
 
 

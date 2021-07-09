@@ -7,7 +7,7 @@
 from torch import nn
 
 from .baseline import Baseline
-from .losses import reidLoss
+from .losses import ReidLoss
 
 
 def build_model(cfg, num_classes) -> nn.Module:

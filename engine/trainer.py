@@ -16,7 +16,7 @@ from pytorch_lightning.loggers import TestTubeLogger
 import test_tube  # noqa: F401
 
 from data.datasets.eval_reid import evaluate
-from modeling import build_model, reidLoss
+from modeling import build_model, ReidLoss
 from solver.build import make_optimizer, make_lr_scheduler
 
 
@@ -32,7 +32,7 @@ class ReidSystem(pl.LightningModule):
             self.num_query,
         ) = (cfg, train_loader, val_loader, num_classes, num_query)
         self.model = build_model(cfg, num_classes)
-        self.loss_fns = reidLoss(cfg.SOLVER.LOSSTYPE, cfg.SOLVER.MARGIN, num_classes)
+        self.loss_fns = ReidLoss(cfg.SOLVER.LOSSTYPE, cfg.SOLVER.MARGIN, num_classes)
 
     def training_step(self, batch, batch_nb):
         inputs, labels = batch
@@ -110,13 +110,13 @@ def do_train(
     logger = logging.getLogger("reid_baseline.train")
     logger.info("Start Training")
 
-    dirpath = os.path.join(output_dir, cfg.DATASETS.TEST_NAMES)
+    dirpath = os.path.join(output_dir, "ckpts")
     filename = f"ckpts-v{cfg.MODEL.VERSION}" + "-epoch{epoch:02d}-rank1{rank1:02d}"
     checkpoint_callback = ModelCheckpoint(
         dirpath=dirpath,
         filename=filename,
         monitor="rank1",
-        save_top_k=1,
+        save_top_k=3,
         verbose=True,
         mode="max",
     )
@@ -132,6 +132,7 @@ def do_train(
         checkpoint_callback=checkpoint_callback,
         check_val_every_n_epoch=eval_period,
         gpus=gpus,
+        auto_select_gpus=True,
         num_sanity_val_steps=0,
         weights_summary="top",
         log_every_n_steps=len(train_loader) // 2,

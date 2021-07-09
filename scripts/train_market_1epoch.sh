@@ -6,6 +6,7 @@ INPUT.DO_LIGHTING 'False' \
 MODEL.GPUS 4 \
 MODEL.WITH_IBN 'False'  \
 MODEL.STAGE_WITH_GCB '(False, False, False, False)' \
+SOLVER.MAX_EPOCHS 1 \
 SOLVER.IMS_PER_BATCH '256' \
 SOLVER.LOSSTYPE '("softmax_smooth", "triplet", "center")' \
 OUTPUT_DIR 'logs/2021.7.9/market/baseline'
