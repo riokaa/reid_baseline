@@ -75,15 +75,19 @@ _C.DATASETS = CN()
 _C.DATASETS.NAMES = ("market1501",)
 # List of the dataset names for testing
 _C.DATASETS.TEST_NAMES = "market1501"
+# Root directory where datasets should be used (and downloaded if not found)
+_C.DATASETS.ROOT_DIR = "/mnt/data/default"
 
 # -----------------------------------------------------------------------------
 # DataLoader
 # -----------------------------------------------------------------------------
 _C.DATALOADER = CN()
+# Number of data loading threads
+_C.DATALOADER.NUM_WORKERS = 8
 # Sampler for data loading
 _C.DATALOADER.SAMPLER = "softmax"
 # Number of instance for each person
-_C.DATALOADER.NUM_INSTANCE = 4
+_C.DATALOADER.NUM_INSTANCE = 16
 
 # ---------------------------------------------------------------------------- #
 # Solver

@@ -5,12 +5,11 @@
 """
 
 import os.path as osp
-import re
+
+# import re
 
 from PIL import Image
 from torch.utils.data import Dataset
-
-__all__ = ["ImageDataset"]
 
 
 def read_image(img_path):
@@ -36,42 +35,32 @@ def read_image(img_path):
 class ImageDataset(Dataset):
     """Image Person ReID Dataset"""
 
-    def __init__(self, img_items, transform=None, relabel=True):
-        self.img_items, self.tfms, self.relabel = img_items, transform, relabel
-        self.pid2label = None
-        if self.relabel:
-            pids = set()
-            for i, item in enumerate(self.img_items):
-                pid = self.get_pids(item[0])  # path
-                self.img_items[i][1] = pid  # replace pid
-                pids.add(pid)
-            self.pids = pids
-            self.pid2label = dict([(p, i) for i, p in enumerate(self.pids)])
-
-    @property
-    def c(self):
-        return len(self.pid2label) if self.pid2label is not None else 0
+    def __init__(self, dataset, transform=None, with_index=False):
+        self.dataset = dataset
+        self.transform = transform
+        self.with_index = with_index
 
     def __len__(self):
-        return len(self.img_items)
+        return len(self.dataset)
 
     def __getitem__(self, index):
-        img_path, pid, camid = self.img_items[index]
+        img_path, pid, camid = self.dataset[index]
         img = read_image(img_path)
 
-        if self.tfms is not None:
-            img = self.tfms(img)
-        if self.relabel:
-            pid = self.pid2label[pid]
-        return img, pid, camid
+        if self.transform is not None:
+            img = self.transform(img)
 
-    def get_pids(self, file_path):
-        """Suitable for muilti-dataset training"""
-        if "cuhk03" in file_path:
-            prefix = "cuhk"
-            pid = "_".join(file_path.split("/")[-1].split("_")[0:2])
-        else:
-            prefix = file_path.split("/")[1]
-            pat = re.compile(r"([-\d]+)_c(\d)")
-            pid, _ = pat.search(file_path).groups()
-        return prefix + "_" + pid
+        if self.with_index:
+            return img, pid, camid, img_path, index
+        return img, pid, camid, img_path
+
+    # def get_pids(self, file_path):
+    #     """Suitable for muilti-dataset training"""
+    #     if "cuhk03" in file_path:
+    #         prefix = "cuhk"
+    #         pid = "_".join(file_path.split("/")[-1].split("_")[0:2])
+    #     else:
+    #         prefix = file_path.split("/")[1]
+    #         pat = re.compile(r"([-\d]+)_c(\d)")
+    #         pid, _ = pat.search(file_path).groups()
+    #     return prefix + "_" + pid

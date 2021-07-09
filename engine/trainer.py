@@ -13,7 +13,7 @@ import torch
 import torch.nn.functional as F
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TestTubeLogger
-import test_tube
+import test_tube  # noqa: F401
 
 from data.datasets.eval_reid import evaluate
 from modeling import build_model, reidLoss

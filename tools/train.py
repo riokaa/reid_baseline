@@ -14,14 +14,14 @@ from torch.backends import cudnn
 
 sys.path.append(".")
 from config import cfg
-from data import get_dataloader
+from data import make_data_loader
 from engine.trainer import do_train
 from utils.logger import setup_logger
 
 
 def train(cfg, local_rank):
     # prepare dataset
-    train_loader, val_loader, num_classes, num_query = get_dataloader(cfg)
+    train_loader, val_loader, num_classes, num_query = make_data_loader(cfg)
 
     do_train(
         cfg,

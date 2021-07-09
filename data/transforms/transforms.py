@@ -1,15 +1,11 @@
 # encoding: utf-8
 """
 @author:  liaoxingyu
-@contact: sherlockliao01@gmail.com
+@contact: liaoxingyu2@jd.com
 """
 
 import math
 import random
-
-__all__ = [
-    "RandomErasing",
-]
 
 
 class RandomErasing(object):
@@ -35,7 +31,7 @@ class RandomErasing(object):
 
     def __call__(self, img):
 
-        if random.uniform(0, 1) > self.probability:
+        if random.uniform(0, 1) >= self.probability:
             return img
 
         for attempt in range(100):

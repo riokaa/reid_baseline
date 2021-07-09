@@ -4,4 +4,4 @@
 @contact: sherlockliao01@gmail.com
 """
 
-from .build import get_dataloader
+from .build import make_data_loader

@@ -31,7 +31,7 @@ class DukeMTMCreID(BaseImageDataset):
 
     dataset_dir = "dukemtmc-reid"
 
-    def __init__(self, root="/export/home/lxy/DATA/reid", verbose=True, **kwargs):
+    def __init__(self, root="/mnt/data/default", verbose=True, **kwargs):
         super(DukeMTMCreID, self).__init__()
         self.dataset_dir = osp.join(root, self.dataset_dir)
         self.dataset_url = (

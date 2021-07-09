@@ -1,94 +1,70 @@
 # encoding: utf-8
 """
-@author:  l1aoxingyu
+@author:  liaoxingyu
 @contact: sherlockliao01@gmail.com
 """
 
-import glob
-import os
-import re
-
 from torch.utils.data import DataLoader
 
-from .collate_batch import train_collate_fn
-from .datasets import ImageDataset, CUHK03
-from .samplers import RandomIdentitySampler
+from .collate_batch import train_collate_fn, val_collate_fn, train_collate_fn_with_index
+from .datasets import init_dataset, ImageDataset
+from .samplers import (
+    RandomIdentitySampler,
+    RandomIdentitySampler_alignedreid,
+)  # New add by gu
 from .transforms import build_transforms
 
 
-def get_dataloader(cfg):
-    train_tfms = build_transforms(cfg, is_train=True)
-    val_tfms = build_transforms(cfg, is_train=False)
-
-    def _process_dir(dir_path):
-        img_paths = []
-        img_paths = glob.glob(os.path.join(dir_path, "*.jpg"))
-        pattern = re.compile(r"([-\d]+)_c(\d*)")
-        v_paths = []
-        for img_path in img_paths:
-            pid, camid = map(int, pattern.search(img_path).groups())
-            pid = int(pid)
-            if pid == -1:
-                continue  # junk images are just ignored
-            v_paths.append([img_path, pid, camid])
-        return v_paths
-
-    market_train_path = "datasets/Market-1501-v15.09.15/bounding_box_train"
-    duke_train_path = "datasets/DukeMTMC-reID/bounding_box_train"
-    cuhk03_train_path = "datasets/cuhk03/"
-
-    market_query_path = "datasets/Market-1501-v15.09.15/query"
-    marker_gallery_path = "datasets/Market-1501-v15.09.15/bounding_box_test"
-    duke_query_path = "datasets/DukeMTMC-reID/query"
-    duek_gallery_path = "datasets/DukeMTMC-reID/bounding_box_test"
-
-    train_img_items = list()
-    for d in cfg.DATASETS.NAMES:
-        if d == "market1501":
-            train_img_items.extend(_process_dir(market_train_path))
-        elif d == "duke":
-            train_img_items.extend(_process_dir(duke_train_path))
-        elif d == "cuhk03":
-            train_img_items.extend(CUHK03().train)
-        else:
-            raise NameError(f"{d} is not available")
-
-    if cfg.DATASETS.TEST_NAMES == "market1501":
-        query_names = _process_dir(market_query_path)
-        gallery_names = _process_dir(marker_gallery_path)
-    elif cfg.DATASETS.TEST_NAMES == "duke":
-        query_names = _process_dir(duke_query_path)
-        gallery_names = _process_dir(duek_gallery_path)
+def make_data_loader(cfg):
+    train_transforms = build_transforms(cfg, is_train=True)
+    val_transforms = build_transforms(cfg, is_train=False)
+    num_workers = cfg.DATALOADER.NUM_WORKERS
+    if len(cfg.DATASETS.NAMES) == 1:
+        dataset = init_dataset(cfg.DATASETS.NAMES[0], root=cfg.DATASETS.ROOT_DIR)
     else:
-        print(f"not support {cfg.DATASETS.TEST_NAMES} test set")
+        # TODO: add multi dataset to train
+        dataset = init_dataset(cfg.DATASETS.NAMES[0], root=cfg.DATASETS.ROOT_DIR)
 
-    num_workers = min(16, len(os.sched_getaffinity(0)))
-
-    train_set = ImageDataset(train_img_items, train_tfms, relabel=True)
+    num_classes = dataset.num_train_pids
+    train_set = ImageDataset(dataset.train, train_transforms)
     if cfg.DATALOADER.SAMPLER == "softmax":
-        train_dataloader = DataLoader(
+        train_loader = DataLoader(
             train_set,
-            cfg.SOLVER.IMS_PER_BATCH,
+            batch_size=cfg.SOLVER.IMS_PER_BATCH,
             shuffle=True,
             num_workers=num_workers,
             collate_fn=train_collate_fn,
-            pin_memory=True,
         )
-    elif cfg.DATALOADER.SAMPLER == "triplet":
-        data_sampler = RandomIdentitySampler(
-            train_img_items, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE
-        )
-        train_dataloader = DataLoader(
+    elif cfg.DATALOADER.SAMPLER == "softmax_triplet_cluster":
+        train_set.with_index = True
+        train_loader = DataLoader(
             train_set,
-            cfg.SOLVER.IMS_PER_BATCH,
-            sampler=data_sampler,
+            batch_size=cfg.SOLVER.IMS_PER_BATCH,
+            sampler=RandomIdentitySampler(
+                dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE
+            ),
+            # sampler=RandomIdentitySampler_alignedreid(dataset.train, cfg.DATALOADER.NUM_INSTANCE),      # new add by gu
             num_workers=num_workers,
-            collate_fn=train_collate_fn,
-            pin_memory=True,
+            collate_fn=train_collate_fn_with_index,
         )
     else:
-        raise NameError(f"{cfg.DATALOADER.SAMPLER} sampler is not support")
+        train_loader = DataLoader(
+            train_set,
+            batch_size=cfg.SOLVER.IMS_PER_BATCH,
+            sampler=RandomIdentitySampler(
+                dataset.train, cfg.SOLVER.IMS_PER_BATCH, cfg.DATALOADER.NUM_INSTANCE
+            ),
+            # sampler=RandomIdentitySampler_alignedreid(dataset.train, cfg.DATALOADER.NUM_INSTANCE),      # new add by gu
+            num_workers=num_workers,
+            collate_fn=train_collate_fn,
+        )
 
-    val_set = ImageDataset(query_names + gallery_names, val_tfms, relabel=False)
-    val_dataloader = DataLoader(val_set, cfg.TEST.IMS_PER_BATCH)
-    return train_dataloader, val_dataloader, train_set.c, len(query_names)
+    val_set = ImageDataset(dataset.query + dataset.gallery, val_transforms)
+    val_loader = DataLoader(
+        val_set,
+        batch_size=cfg.TEST.IMS_PER_BATCH,
+        shuffle=False,
+        num_workers=num_workers,
+        collate_fn=val_collate_fn,
+    )
+    return train_loader, val_loader, len(dataset.query), num_classes

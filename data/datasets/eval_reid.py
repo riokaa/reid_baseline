@@ -4,9 +4,7 @@
 @contact: sherlockliao01@gmail.com
 """
 import numpy as np
-import copy
 from collections import defaultdict
-import sys
 import warnings
 
 try:
